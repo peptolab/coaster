@@ -1,0 +1,99 @@
+<!doctype html>
+<html>
+
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+        <title>Draggable & Touch-friendly Slider Example</title>
+        <link rel="stylesheet" href="../dist/css/coaster.css">
+        <link rel="stylesheet" href="css/demo.css">
+    </head>
+
+    <body>
+
+        <div id="carousel" class="carousel" data-carousel>
+
+            <header data-carousel-caption class="carousel__caption"></header>
+
+            <div data-carousel-window class="carousel__window">
+
+                <div data-carousel-track class="carousel__track">
+
+                    <figure data-carousel-slide class="carousel__slide">
+                        <picture>
+                            <source media="(max-width: 799px)" srcset="https://placekitten.com/801/600">
+                            <source media="(min-width: 1200px)" srcset="https://placekitten.com/2001/1500">
+                            <img class="carousel__image" src="https://placekitten.com/1001/750" alt="Kittens">
+                        </picture>
+                    </figure>
+
+                    <figure data-carousel-slide class="carousel__slide">
+                        <picture>
+                            <source media="(max-width: 799px)" srcset="https://placekitten.com/802/600">
+                            <source media="(min-width: 1200px)" srcset="https://placekitten.com/2002/1500">
+                            <img class="carousel__image" src="https://placekitten.com/1002/750" alt="Kittens">
+                        </picture>
+                    </figure>
+
+                    <figure data-carousel-slide class="carousel__slide">
+                        <picture>
+                            <source media="(max-width: 799px)" srcset="https://placekitten.com/803/600">
+                            <source media="(min-width: 1200px)" srcset="https://placekitten.com/2003/1500">
+                            <img class="carousel__image" src="https://placekitten.com/1003/750" alt="Kittens">
+                        </picture>
+                    </figure>
+
+                    <figure data-carousel-slide class="carousel__slide">
+                        <picture>
+                            <source media="(max-width: 799px)" srcset="https://placekitten.com/804/600">
+                            <source media="(min-width: 1200px)" srcset="https://placekitten.com/2004/1500">
+                            <img class="carousel__image" src="https://placekitten.com/1004/750" alt="Kittens">
+                        </picture>
+                    </figure>
+
+                    <figure data-carousel-slide class="carousel__slide">
+                        <picture>
+                            <source media="(max-width: 799px)" srcset="https://placekitten.com/805/600">
+                            <source media="(min-width: 1200px)" srcset="https://placekitten.com/2005/1500">
+                            <img class="carousel__image" src="https://placekitten.com/1005/750" alt="Kittens">
+                        </picture>
+                    </figure>
+
+                </div>
+
+                <nav data-carousel-nav class="carousel__nav">
+                    <button data-carousel-nav="prev" class="carousel__button carousel__button--prev">Prev Slide</button>
+                    <button data-carousel-nav="next" class="carousel__button carousel__button--next">Next Slide</button>
+                </nav>
+
+            </div>
+
+            <nav data-carousel-pagination class="carousel__pagination">
+                <button data-carousel-nav="1" class="carousel__pagination--item">View Slide 1</button>
+                <button data-carousel-nav="2" class="carousel__pagination--item">View Slide 2</button>
+                <button data-carousel-nav="3" class="carousel__pagination--item">View Slide 3</button>
+                <button data-carousel-nav="4" class="carousel__pagination--item">View Slide 4</button>
+                <button data-carousel-nav="5" class="carousel__pagination--item">View Slide 5</button>
+            </nav>
+
+        </div>
+
+        <script type="text/javascript" src="../dist/coaster.min.js"></script>
+        <script type="text/javascript">
+            var carousel = document.getElementById('carousel')
+            new Coaster(carousel, {
+                'drag': {
+                    'mouse': true,
+                    'touch': true
+                },
+                'onChange': (c, d) => {
+                    // Example of updating slide counter on slide change
+                    carousel.querySelector('[data-carousel-caption]').innerHTML = `Slide ${c.index + 1} of ${d.slides.length}`
+                }
+            })
+        </script>
+
+    </body>
+
+</html>

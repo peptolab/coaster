@@ -1,0 +1,50 @@
+{
+  "name": "coaster",
+  "version": "1.0.0",
+  "description": "Coaster is a dependency-free ES6 Javascript carousel. Designed to be lightly built with JS and HTML with CSS transitions and animations to provide maximum flexibility and customisation.",
+  "main": "dist/coaster.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/peptolab/glide.git"
+  },
+  "scripts": {
+    "sass:core": "node-sass src/sass/coaster.scss dist/css/coaster.css --output-style=compressed",
+    "build:css": "npm run sass:core",
+    "build:esm": "rollup --config build/esm.js && rollup --config build/esm.modular.js",
+    "build:umd": "rollup --config build/umd.js && rollup --config build/umd.min.js",
+    "build:js": "npm run build:esm && npm run build:umd",
+    "build": "npm run build:css && npm run build:js",
+    "test": "jest tests/**/*.test.js",
+    "lint": "eslint {src,tests}/**/*.js"
+  },
+  "keywords": [
+    "carousel",
+    "vanilla",
+    "touch",
+    "responsive",
+    "lightweight"
+  ],
+  "author": "Simon Mundy <simon.mundy@peptolab.com> (https://www.peptolab.com)",
+  "license": "MIT",
+  "devDependencies": {
+    "@babel/core": "^7.12.9",
+    "@babel/plugin-external-helpers": "^7.12.1",
+    "@babel/plugin-transform-object-assign": "^7.12.1",
+    "@babel/preset-env": "^7.12.7",
+    "@rollup/plugin-babel": "^5.2.2",
+    "eslint": "^7.15.0",
+    "eslint-config-standard": "^16.0.2",
+    "eslint-plugin-import": "^2.22.1",
+    "eslint-plugin-node": "^11.1.0",
+    "eslint-plugin-promise": "^4.2.1",
+    "eslint-plugin-standard": "^5.0.0",
+    "jest": "^26.6.3",
+    "node-sass": "^5.0.0",
+    "rollup": "^2.34.2",
+    "rollup-plugin-terser": "^7.0.2",
+    "stylelint": "^13.8.0",
+    "stylelint-config-standard": "^20.0.0",
+    "stylelint-scss": "^3.18.0"
+  },
+  "dependencies": {}
+}
