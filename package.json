@@ -1,11 +1,14 @@
 {
-  "name": "coaster",
+  "name": "@peptolab/coaster",
   "version": "1.0.0",
   "description": "Coaster is a dependency-free ES6 Javascript carousel. Designed to be lightly built with JS and HTML with CSS transitions and animations to provide maximum flexibility and customisation.",
   "main": "dist/coaster.js",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/peptolab/glide.git"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
     "sass:core": "node-sass src/sass/coaster.scss dist/css/coaster.css --output-style=compressed",
@@ -46,5 +49,9 @@
     "stylelint-config-standard": "^20.0.0",
     "stylelint-scss": "^3.18.0"
   },
-  "dependencies": {}
+  "dependencies": {},
+  "bugs": {
+    "url": "https://github.com/peptolab/glide/issues"
+  },
+  "homepage": "https://github.com/peptolab/glide#readme"
 }
