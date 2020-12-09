@@ -429,6 +429,8 @@
       key: "dragMove",
       value: function dragMove(e) {
         e = e || window.event;
+        e.preventDefault();
+        e.stopPropagation();
 
         if (e.type == 'touchmove') {
           this.carousel.newX = e.touches[0].clientX;

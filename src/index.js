@@ -266,7 +266,8 @@ export default class Core {
 
     dragMove (e) {
         e = e || window.event
-        let adjascent
+        e.preventDefault()
+        e.stopPropagation()
 
         if (e.type == 'touchmove') {
             this.carousel.newX = e.touches[0].clientX;
