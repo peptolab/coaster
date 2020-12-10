@@ -1,10 +1,12 @@
-export default class Core {
+import Slide from './slide'
+import { debounce } from './utils'
+
+export default class Coaster {
 
     constructor(el, options) {
         this.DOM = {
             'carousel': el,
             'track': null,
-            'slides': null,
             'navPrev': null,
             'navNext': null,
             'navPaginator': null
@@ -12,11 +14,13 @@ export default class Core {
 
         this.carousel = {
             'index': -1,
+            'slides': [],
             'current': null,
             'after': null,
             'before': null,
             'autoplay': null,
             'delay': null,
+            'queue': null,
             'fn': {
                 'navigate': null,
                 'dragStart': null,
@@ -28,7 +32,7 @@ export default class Core {
         }
 
         this.options = {
-            'threshold': 100,
+            'threshold': 200,
             'drag': {
                 'touch': true,
                 'mouse': false
@@ -80,20 +84,19 @@ export default class Core {
         this.carousel.fn.dragStart = this.dragStart.bind(this)
         this.carousel.fn.dragEnd = this.dragEnd.bind(this)
         this.carousel.fn.dragMove = this.dragMove.bind(this)
-        this.carousel.fn.transitionEnd = this.transitionEnd.bind(this)
 
         this.carousel.index = 0
 
-        this.carousel.current = this.DOM.slides[this.carousel.index]
-        this.carousel.current.classList.add('active')
+        this.carousel.current = this.carousel.slides[this.carousel.index]
+        this.carousel.current.activate()
 
         this.options.onChange && this.options.onChange(this.carousel, this.DOM)
     }
 
     setSlides() {
         this.DOM.track = this.DOM.carousel.querySelector(this.options.selector.track)
-        this.DOM.slides = [...this.DOM.carousel.querySelectorAll(this.options.selector.slide)]
-        if (! this.DOM.slides.length) {
+        ;[...this.DOM.carousel.querySelectorAll(this.options.selector.slide)].forEach(slide => this.carousel.slides.push(new Slide(slide)))
+        if (! this.carousel.slides.length) {
             return false
         }
     }
@@ -146,29 +149,38 @@ export default class Core {
     }
 
     navigate(targetIndex, moveType) {
+        let directionOut, directionIn;
+
+        if (this.carousel.current.isMoving()) {
+            const renavigate = this.debounce(function () {
+                this.navigate(targetIndex, moveType)
+            }.bind(this), 50);
+            return renavigate()
+        }
+
         switch (targetIndex) {
             case 'prev':
                 targetIndex = this.carousel.index - 1;
                 if (targetIndex < 0) {
-                    targetIndex = this.DOM.slides.length - 1;
+                    targetIndex = this.carousel.slides.length - 1;
                 }
-                this.carousel.direction = 'prev'
-                this.carousel.opposite = 'next'
+                directionOut = 'prev'
+                directionIn = 'next'
                 break
 
             case 'next':
                 targetIndex = this.carousel.index + 1;
-                if (targetIndex >= this.DOM.slides.length) {
+                if (targetIndex >= this.carousel.slides.length) {
                     targetIndex = 0;
                 }
-                this.carousel.direction = 'next'
-                this.carousel.opposite = 'prev'
+                directionOut = 'next'
+                directionIn = 'prev'
                 break
 
             default:
                 targetIndex -= 1;
-                this.carousel.direction = (targetIndex < this.carousel.index) ? 'prev' : 'next'
-                this.carousel.opposite = (targetIndex < this.carousel.index) ? 'next' : 'prev'
+                directionOut = (targetIndex < this.carousel.index) ? 'prev' : 'next'
+                directionIn = (targetIndex < this.carousel.index) ? 'next' : 'prev'
                 break
         }
 
@@ -176,51 +188,26 @@ export default class Core {
             return false
         }
 
-        this.carousel.before = this.DOM.slides[this.carousel.index]
-        this.transitionClear(this.carousel.before)
-
-        this.carousel.current = this.DOM.slides[targetIndex]
-        this.transitionClear(this.carousel.current)
+        this.carousel.before = this.carousel.slides[this.carousel.index]
+        this.carousel.current = this.carousel.slides[targetIndex]
 
         this.carousel.index = targetIndex
 
         switch (moveType) {
             case 'fade':
             case 'slide':
-                this.carousel.before.baseTransitionClass = `carousel__transition--${moveType}`
-                this.carousel.before.moveTransitionClass = `carousel__transition--${moveType}-${this.carousel.direction}`
-                window.requestAnimationFrame(e => {
-                    this.carousel.before.classList.add(this.carousel.before.baseTransitionClass)
-                    this.carousel.before.classList.add(this.carousel.before.moveTransitionClass)
-                    this.transitionStart(this.carousel.before)
-                })
-
-                this.carousel.current.baseTransitionClass = `carousel__transition--${moveType}`
-                this.carousel.current.moveTransitionClass = `carousel__transition--${moveType}-${this.carousel.opposite}`
-                this.carousel.current.classList.add(this.carousel.current.moveTransitionClass)
-                window.requestAnimationFrame(e => {
-                    this.carousel.current.classList.remove(this.carousel.current.moveTransitionClass)
-                    this.carousel.current.classList.add(this.carousel.current.baseTransitionClass)
-                    this.transitionStart(this.carousel.current)
-                })
+                this.carousel.before.move('out', moveType, directionOut)
+                this.carousel.current.move('in', moveType, directionIn)
                 break;
 
             case 'drag':
-                this.carousel.before.baseTransitionClass = `carousel__transition--${moveType}`
-                this.carousel.before.moveTransitionClass = `carousel__transition--${moveType}-${this.carousel.direction}`
-                this.carousel.before.classList.add(this.carousel.before.baseTransitionClass)
-                this.carousel.before.classList.add(this.carousel.before.moveTransitionClass)
-                this.transitionStart(this.carousel.before)
-
-                this.carousel.current.baseTransitionClass = `carousel__transition--${moveType}`
-                this.carousel.current.classList.add(this.carousel.current.baseTransitionClass)
-                this.carousel.current.style.transform = `translateX(0)`
-                this.transitionStart(this.carousel.current)
+                this.carousel.before.drag('out', moveType, directionOut)
+                this.carousel.current.drag('in', moveType, directionIn)
                 break
         }
 
-        this.carousel.before.classList.remove('active')
-        this.carousel.current.classList.add('active')
+        this.carousel.before.deactivate()
+        this.carousel.current.activate()
 
         this.options.onChange && this.options.onChange(this.carousel, this.DOM)
     }
@@ -235,7 +222,11 @@ export default class Core {
 
         this.pause()
 
-        this.carousel.currentInitialX = this.carousel.current.offsetLeft;
+        if (this.carousel.current.isMoving()) {
+            return false
+        }
+
+        this.carousel.currentInitialX = this.carousel.current.slide.offsetLeft;
 
         if (e.type == 'touchstart') {
             this.carousel.dragInitialX = this.carousel.newX = e.touches[0].clientX;
@@ -245,19 +236,14 @@ export default class Core {
             document.addEventListener('mousemove', this.carousel.fn.dragMove)
         }
 
-        this.carousel.before = (this.carousel.index > 0) ? this.DOM.slides[this.carousel.index - 1] : this.DOM.slides[this.DOM.slides.length - 1]
-        this.carousel.after = (this.carousel.index < this.DOM.slides.length - 1) ? this.DOM.slides[this.carousel.index + 1] : this.DOM.slides[0]
+        this.carousel.before = (this.carousel.index > 0) ? this.carousel.slides[this.carousel.index - 1] : this.carousel.slides[this.carousel.slides.length - 1]
+        this.carousel.after = (this.carousel.index < this.carousel.slides.length - 1) ? this.carousel.slides[this.carousel.index + 1] : this.carousel.slides[0]
 
         ;[this.carousel.current, this.carousel.before, this.carousel.after].forEach(el => {
-            this.dragPrepare(el)
-            el.classList.add('dragging')
+            el.dragStart()
         })
 
-        this.dragPosition()
-    }
-
-    dragPrepare(el) {
-        this.transitionClear(el);
+        this.dragPosition(0)
     }
 
     dragMove (e) {
@@ -265,94 +251,48 @@ export default class Core {
         e.preventDefault()
         e.stopPropagation()
 
-        if (e.type == 'touchmove') {
-            this.carousel.newX = e.touches[0].clientX;
-        } else {
-            this.carousel.newX = e.clientX;
-        }
-
+        this.carousel.newX = (e.type == 'touchmove') ? e.touches[0].clientX : e.clientX;
         this.carousel.calculatedX = (this.carousel.currentInitialX - (this.carousel.dragInitialX - this.carousel.newX))
-        let dist = this.carousel.currentInitialX - (this.carousel.dragInitialX - this.carousel.newX)
 
-        this.dragPosition(this.carousel.calculatedX)
+        this.dragPosition(this.carousel.calculatedX, false)
     }
 
-    dragPosition(x) {
+    dragPosition(x, transition) {
+        let dist = this.carousel.currentInitialX - (this.carousel.dragInitialX - this.carousel.newX)
 
-        this.carousel.current.style.transform = `translateX(${x}px)`
+        this.carousel.current.dragMove(x, transition)
 
         if (dist > 0) {
-            this.carousel.before.style.transform = `translateX(${x - this.carousel.current.offsetWidth}px)`
+            this.carousel.before.dragMove(x - this.carousel.current.slide.offsetWidth, transition)
             if (this.carousel.before != this.carousel.after) {
-                this.carousel.after.style.transform = `translateX(${x + this.carousel.current.offsetWidth}px)`
+                this.carousel.after.dragMove(x + this.carousel.current.slide.offsetWidth, transition)
             }
         } else {
-            this.carousel.after.style.transform = `translateX(${x + this.carousel.current.offsetWidth}px)`
+            this.carousel.after.dragMove(x + this.carousel.current.slide.offsetWidth, transition)
             if (this.carousel.before != this.carousel.after) {
-                this.carousel.before.style.transform = `translateX(${x - this.carousel.current.offsetWidth}px)`
+                this.carousel.before.dragMove(x - this.carousel.current.slide.offsetWidth, transition)
             }
         }
     }
 
     dragEnd (e) {
         ;[this.carousel.current, this.carousel.before, this.carousel.after].forEach(el => {
-            el.classList.remove('dragging')
+            el.dragStop()
         })
 
         let dist = this.carousel.currentInitialX - (this.carousel.dragInitialX - this.carousel.newX)
 
         if (dist < -this.options.threshold) {
-            this.dragReset(this.carousel.before)
+            this.carousel.before.dragReset()
             this.navigate('next', 'drag')
-            e.preventDefault();
         } else if (dist > this.options.threshold) {
-            this.dragReset(this.carousel.after)
+            this.carousel.after.dragReset()
             this.navigate('prev', 'drag')
-            e.preventDefault();
         } else {
-            ;[this.carousel.current, this.carousel.before, this.carousel.after].forEach(el => {
-                this.transitionStart(el)
-                el.style.transform = null
-            })
+            this.dragPosition(0, true)
         }
 
         document.removeEventListener('mouseup', this.carousel.fn.dragEnd)
         document.removeEventListener('mousemove', this.carousel.fn.dragMove)
-    }
-
-    dragReset(el) {
-        el.addEventListener('transitionend', this.carousel.fn.transitionEnd)
-        el.style.transform = null;
-    }
-
-    transitionEnd (e) {
-        const el = e.target
-        this.transitionClear(el)
-    }
-
-    transitionStart(el) {
-        el.addEventListener('transitionend', this.carousel.fn.transitionEnd)
-        el.classList.add('transitioning')
-        return el
-    }
-
-    transitionClear(el) {
-        if (!el) {
-            return false
-        }
-
-        if (el.baseTransitionClass !== undefined) {
-            el.classList.remove(el.baseTransitionClass)
-            delete el.baseTransitionClass
-        }
-
-        if (el.moveTransitionClass !== undefined) {
-            el.classList.remove(el.moveTransitionClass)
-            delete el.moveTransitionClass
-        }
-
-        el.style.transform = null
-        el.classList.remove('transitioning')
-        el.removeEventListener('transitionend', this.carousel.fn.transitionEnd)
     }
 }

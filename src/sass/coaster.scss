@@ -15,6 +15,7 @@
         align-items: stretch;
         position: relative;
         z-index: 1;
+        overflow: hidden;
     }
 
     &__slide {
@@ -57,7 +58,7 @@
         }
 
         &--slide {
-            transition: transform .75s cubic-bezier(0.25, 1, 0.5, 1);
+            transition: transform .75s cubic-bezier(0.85, 0, 0.15, 1);
 
             &-prev {
                 transform: translate3d(100%, 0, 0);
@@ -69,7 +70,7 @@
         }
 
         &--drag {
-            transition: transform .75s cubic-bezier(0.25, 1, 0.5, 1);
+            transition: transform .375s cubic-bezier(0.22, 1, 0.36, 1);
 
             &-prev {
                 transform: translate3d(100%, 0, 0);
@@ -102,5 +103,6 @@
     &__button {
         position: absolute;
         cursor: pointer;
+        outline: 0 none;
     }
 }

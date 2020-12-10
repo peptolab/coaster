@@ -1,5 +1,5 @@
 /*!
- * Coaster.js v1.0.0
+ * Coaster.js v1.0.1
  * (c) 2020-2020 Simon Mundy <simon.mundy@peptolab.com> (https://www.peptolab.com)
  * Released under the MIT License.
  */
@@ -144,25 +144,172 @@
     throw new TypeError("Invalid attempt to spread non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method.");
   }
 
-  var Core = /*#__PURE__*/function () {
-    function Core(el, options) {
-      _classCallCheck(this, Core);
+  var Slide = /*#__PURE__*/function () {
+    function Slide(el) {
+      _classCallCheck(this, Slide);
+
+      this.slide = el;
+      this.active = false;
+      this.moving = false;
+      this.dragging = false;
+      this.transition = [];
+      this.moveEndFn = this.moveEnd.bind(this);
+    }
+
+    _createClass(Slide, [{
+      key: "isActive",
+      value: function isActive() {
+        return this.active;
+      }
+    }, {
+      key: "isMoving",
+      value: function isMoving() {
+        return this.moving;
+      }
+    }, {
+      key: "isDragging",
+      value: function isDragging() {
+        return this.dragging;
+      }
+    }, {
+      key: "activate",
+      value: function activate() {
+        this.active = true;
+        this.slide.classList.add('active');
+      }
+    }, {
+      key: "deactivate",
+      value: function deactivate() {
+        this.active = false;
+        this.slide.classList.remove('active');
+      }
+    }, {
+      key: "dragStart",
+      value: function dragStart() {
+        this.dragging = true;
+        this.slide.classList.add('dragging');
+      }
+    }, {
+      key: "dragStop",
+      value: function dragStop() {
+        this.dragging = false;
+        this.slide.classList.remove('dragging');
+      }
+    }, {
+      key: "dragMove",
+      value: function dragMove(x, transition) {
+        this.slide.style.transform = "translateX(".concat(x, "px)");
+
+        if (transition === true) {
+          this.addTransition('transitioning');
+          this.addTransition("carousel__transition--drag");
+          this.slide.addEventListener('transitionend', this.moveEndFn, true);
+        }
+      }
+    }, {
+      key: "dragReset",
+      value: function dragReset() {
+        this.slide.style.transform = null;
+      }
+    }, {
+      key: "addTransition",
+      value: function addTransition(cls) {
+        this.transition.push(cls);
+        this.slide.classList.add(cls);
+      }
+    }, {
+      key: "removeTransition",
+      value: function removeTransition(cls) {
+        this.transition.filter(function (item) {
+          return item !== cls;
+        });
+        this.slide.classList.remove(cls);
+      }
+    }, {
+      key: "move",
+      value: function move(type, transition, direction) {
+        var _this = this;
+
+        this.moving = true;
+        var transitionBase = "carousel__transition--".concat(transition);
+        var transitionMove = "carousel__transition--".concat(transition, "-").concat(direction);
+
+        if (type == 'in') {
+          this.addTransition(transitionMove);
+        }
+
+        console.warn(type, transition, direction);
+        requestAnimationFrame(function () {
+          _this.addTransition('transitioning');
+
+          _this.addTransition(transitionBase);
+
+          if (type == 'in') {
+            _this.removeTransition(transitionMove);
+          } else {
+            _this.addTransition(transitionMove);
+          }
+
+          _this.slide.offsetWidth;
+
+          _this.slide.addEventListener('transitionend', _this.moveEndFn, true);
+        });
+      }
+    }, {
+      key: "drag",
+      value: function drag(type, transition, direction) {
+        this.moving = true;
+        var transitionBase = "carousel__transition--".concat(transition);
+        var transitionMove = "carousel__transition--".concat(transition, "-").concat(direction);
+        this.slide.style.transform = null;
+        this.addTransition('transitioning');
+        this.addTransition(transitionBase);
+
+        if (type == 'in') {
+          this.removeTransition(transitionMove);
+        } else {
+          this.addTransition(transitionMove);
+        }
+
+        this.slide.addEventListener('transitionend', this.moveEndFn, true);
+      }
+    }, {
+      key: "moveEnd",
+      value: function moveEnd() {
+        var _this2 = this;
+
+        this.moving = false;
+        this.slide.removeEventListener('transitionend', this.moveEndFn, true);
+        this.transition.forEach(function (cls) {
+          return _this2.removeTransition(cls);
+        });
+        this.dragReset();
+      }
+    }]);
+
+    return Slide;
+  }();
+
+  var Coaster = /*#__PURE__*/function () {
+    function Coaster(el, options) {
+      _classCallCheck(this, Coaster);
 
       this.DOM = {
         'carousel': el,
         'track': null,
-        'slides': null,
         'navPrev': null,
         'navNext': null,
         'navPaginator': null
       };
       this.carousel = {
         'index': -1,
+        'slides': [],
         'current': null,
         'after': null,
         'before': null,
         'autoplay': null,
         'delay': null,
+        'queue': null,
         'fn': {
           'navigate': null,
           'dragStart': null,
@@ -173,7 +320,7 @@
         }
       };
       this.options = {
-        'threshold': 100,
+        'threshold': 200,
         'drag': {
           'touch': true,
           'mouse': false
@@ -213,7 +360,7 @@
       this.options.onStart && this.options.onStart(this.carousel.current);
     }
 
-    _createClass(Core, [{
+    _createClass(Coaster, [{
       key: "setOptions",
       value: function setOptions(options) {
         this.options = Object.assign(this.options, options);
@@ -225,19 +372,23 @@
         this.carousel.fn.dragStart = this.dragStart.bind(this);
         this.carousel.fn.dragEnd = this.dragEnd.bind(this);
         this.carousel.fn.dragMove = this.dragMove.bind(this);
-        this.carousel.fn.transitionEnd = this.transitionEnd.bind(this);
         this.carousel.index = 0;
-        this.carousel.current = this.DOM.slides[this.carousel.index];
-        this.carousel.current.classList.add('active');
+        this.carousel.current = this.carousel.slides[this.carousel.index];
+        this.carousel.current.activate();
         this.options.onChange && this.options.onChange(this.carousel, this.DOM);
       }
     }, {
       key: "setSlides",
       value: function setSlides() {
-        this.DOM.track = this.DOM.carousel.querySelector(this.options.selector.track);
-        this.DOM.slides = _toConsumableArray(this.DOM.carousel.querySelectorAll(this.options.selector.slide));
+        var _this = this;
 
-        if (!this.DOM.slides.length) {
+        this.DOM.track = this.DOM.carousel.querySelector(this.options.selector.track);
+
+        _toConsumableArray(this.DOM.carousel.querySelectorAll(this.options.selector.slide)).forEach(function (slide) {
+          return _this.carousel.slides.push(new Slide(slide));
+        });
+
+        if (!this.carousel.slides.length) {
           return false;
         }
       }
@@ -256,7 +407,7 @@
     }, {
       key: "addListeners",
       value: function addListeners() {
-        var _this = this;
+        var _this2 = this;
 
         if (this.options.drag.touch) {
           this.DOM.track.addEventListener('touchstart', this.carousel.fn.dragStart);
@@ -271,7 +422,7 @@
         this.DOM.navPrev.addEventListener('click', this.carousel.fn.navigate);
         this.DOM.navNext.addEventListener('click', this.carousel.fn.navigate);
         this.DOM.navPaginator.forEach(function (el) {
-          return el.addEventListener('click', _this.carousel.fn.navigate);
+          return el.addEventListener('click', _this2.carousel.fn.navigate);
         });
       }
     }, {
@@ -299,35 +450,42 @@
     }, {
       key: "navigate",
       value: function navigate(targetIndex, moveType) {
-        var _this2 = this;
+        var directionOut, directionIn;
+
+        if (this.carousel.current.isMoving()) {
+          var renavigate = this.debounce(function () {
+            this.navigate(targetIndex, moveType);
+          }.bind(this), 50);
+          return renavigate();
+        }
 
         switch (targetIndex) {
           case 'prev':
             targetIndex = this.carousel.index - 1;
 
             if (targetIndex < 0) {
-              targetIndex = this.DOM.slides.length - 1;
+              targetIndex = this.carousel.slides.length - 1;
             }
 
-            this.carousel.direction = 'prev';
-            this.carousel.opposite = 'next';
+            directionOut = 'prev';
+            directionIn = 'next';
             break;
 
           case 'next':
             targetIndex = this.carousel.index + 1;
 
-            if (targetIndex >= this.DOM.slides.length) {
+            if (targetIndex >= this.carousel.slides.length) {
               targetIndex = 0;
             }
 
-            this.carousel.direction = 'next';
-            this.carousel.opposite = 'prev';
+            directionOut = 'next';
+            directionIn = 'prev';
             break;
 
           default:
             targetIndex -= 1;
-            this.carousel.direction = targetIndex < this.carousel.index ? 'prev' : 'next';
-            this.carousel.opposite = targetIndex < this.carousel.index ? 'next' : 'prev';
+            directionOut = targetIndex < this.carousel.index ? 'prev' : 'next';
+            directionIn = targetIndex < this.carousel.index ? 'next' : 'prev';
             break;
         }
 
@@ -335,51 +493,25 @@
           return false;
         }
 
-        this.carousel.before = this.DOM.slides[this.carousel.index];
-        this.transitionClear(this.carousel.before);
-        this.carousel.current = this.DOM.slides[targetIndex];
-        this.transitionClear(this.carousel.current);
+        this.carousel.before = this.carousel.slides[this.carousel.index];
+        this.carousel.current = this.carousel.slides[targetIndex];
         this.carousel.index = targetIndex;
 
         switch (moveType) {
           case 'fade':
           case 'slide':
-            this.carousel.before.baseTransitionClass = "carousel__transition--".concat(moveType);
-            this.carousel.before.moveTransitionClass = "carousel__transition--".concat(moveType, "-").concat(this.carousel.direction);
-            window.requestAnimationFrame(function (e) {
-              _this2.carousel.before.classList.add(_this2.carousel.before.baseTransitionClass);
-
-              _this2.carousel.before.classList.add(_this2.carousel.before.moveTransitionClass);
-
-              _this2.transitionStart(_this2.carousel.before);
-            });
-            this.carousel.current.baseTransitionClass = "carousel__transition--".concat(moveType);
-            this.carousel.current.moveTransitionClass = "carousel__transition--".concat(moveType, "-").concat(this.carousel.opposite);
-            this.carousel.current.classList.add(this.carousel.current.moveTransitionClass);
-            window.requestAnimationFrame(function (e) {
-              _this2.carousel.current.classList.remove(_this2.carousel.current.moveTransitionClass);
-
-              _this2.carousel.current.classList.add(_this2.carousel.current.baseTransitionClass);
-
-              _this2.transitionStart(_this2.carousel.current);
-            });
+            this.carousel.before.move('out', moveType, directionOut);
+            this.carousel.current.move('in', moveType, directionIn);
             break;
 
           case 'drag':
-            this.carousel.before.baseTransitionClass = "carousel__transition--".concat(moveType);
-            this.carousel.before.moveTransitionClass = "carousel__transition--".concat(moveType, "-").concat(this.carousel.direction);
-            this.carousel.before.classList.add(this.carousel.before.baseTransitionClass);
-            this.carousel.before.classList.add(this.carousel.before.moveTransitionClass);
-            this.transitionStart(this.carousel.before);
-            this.carousel.current.baseTransitionClass = "carousel__transition--".concat(moveType);
-            this.carousel.current.classList.add(this.carousel.current.baseTransitionClass);
-            this.carousel.current.style.transform = "translateX(0)";
-            this.transitionStart(this.carousel.current);
+            this.carousel.before.drag('out', moveType, directionOut);
+            this.carousel.current.drag('in', moveType, directionIn);
             break;
         }
 
-        this.carousel.before.classList.remove('active');
-        this.carousel.current.classList.add('active');
+        this.carousel.before.deactivate();
+        this.carousel.current.activate();
         this.options.onChange && this.options.onChange(this.carousel, this.DOM);
       }
     }, {
@@ -391,11 +523,14 @@
     }, {
       key: "dragStart",
       value: function dragStart(e) {
-        var _this3 = this;
-
         e = e || window.event;
         this.pause();
-        this.carousel.currentInitialX = this.carousel.current.offsetLeft;
+
+        if (this.carousel.current.isMoving()) {
+          return false;
+        }
+
+        this.carousel.currentInitialX = this.carousel.current.slide.offsetLeft;
 
         if (e.type == 'touchstart') {
           this.carousel.dragInitialX = this.carousel.newX = e.touches[0].clientX;
@@ -405,19 +540,12 @@
           document.addEventListener('mousemove', this.carousel.fn.dragMove);
         }
 
-        this.carousel.before = this.carousel.index > 0 ? this.DOM.slides[this.carousel.index - 1] : this.DOM.slides[this.DOM.slides.length - 1];
-        this.carousel.after = this.carousel.index < this.DOM.slides.length - 1 ? this.DOM.slides[this.carousel.index + 1] : this.DOM.slides[0];
+        this.carousel.before = this.carousel.index > 0 ? this.carousel.slides[this.carousel.index - 1] : this.carousel.slides[this.carousel.slides.length - 1];
+        this.carousel.after = this.carousel.index < this.carousel.slides.length - 1 ? this.carousel.slides[this.carousel.index + 1] : this.carousel.slides[0];
         [this.carousel.current, this.carousel.before, this.carousel.after].forEach(function (el) {
-          _this3.dragPrepare(el);
-
-          el.classList.add('dragging');
+          el.dragStart();
         });
-        this.dragPosition();
-      }
-    }, {
-      key: "dragPrepare",
-      value: function dragPrepare(el) {
-        this.transitionClear(el);
+        this.dragPosition(0);
       }
     }, {
       key: "dragMove",
@@ -425,107 +553,54 @@
         e = e || window.event;
         e.preventDefault();
         e.stopPropagation();
-
-        if (e.type == 'touchmove') {
-          this.carousel.newX = e.touches[0].clientX;
-        } else {
-          this.carousel.newX = e.clientX;
-        }
-
-        this.dragPosition();
+        this.carousel.newX = e.type == 'touchmove' ? e.touches[0].clientX : e.clientX;
+        this.carousel.calculatedX = this.carousel.currentInitialX - (this.carousel.dragInitialX - this.carousel.newX);
+        this.dragPosition(this.carousel.calculatedX, false);
       }
     }, {
       key: "dragPosition",
-      value: function dragPosition() {
-        this.carousel.calculatedX = this.carousel.currentInitialX - (this.carousel.dragInitialX - this.carousel.newX);
+      value: function dragPosition(x, transition) {
         var dist = this.carousel.currentInitialX - (this.carousel.dragInitialX - this.carousel.newX);
-        this.carousel.current.style.transform = "translateX(".concat(this.carousel.calculatedX, "px)");
+        this.carousel.current.dragMove(x, transition);
 
         if (dist > 0) {
-          this.carousel.before.style.transform = "translateX(".concat(this.carousel.calculatedX - this.carousel.current.offsetWidth, "px)");
+          this.carousel.before.dragMove(x - this.carousel.current.slide.offsetWidth, transition);
 
           if (this.carousel.before != this.carousel.after) {
-            this.carousel.after.style.transform = "translateX(".concat(this.carousel.calculatedX + this.carousel.current.offsetWidth, "px)");
+            this.carousel.after.dragMove(x + this.carousel.current.slide.offsetWidth, transition);
           }
         } else {
-          this.carousel.after.style.transform = "translateX(".concat(this.carousel.calculatedX + this.carousel.current.offsetWidth, "px)");
+          this.carousel.after.dragMove(x + this.carousel.current.slide.offsetWidth, transition);
 
           if (this.carousel.before != this.carousel.after) {
-            this.carousel.before.style.transform = "translateX(".concat(this.carousel.calculatedX - this.carousel.current.offsetWidth, "px)");
+            this.carousel.before.dragMove(x - this.carousel.current.slide.offsetWidth, transition);
           }
         }
       }
     }, {
       key: "dragEnd",
       value: function dragEnd(e) {
-        var _this4 = this;
         [this.carousel.current, this.carousel.before, this.carousel.after].forEach(function (el) {
-          el.classList.remove('dragging');
+          el.dragStop();
         });
         var dist = this.carousel.currentInitialX - (this.carousel.dragInitialX - this.carousel.newX);
 
         if (dist < -this.options.threshold) {
-          this.dragReset(this.carousel.before);
+          this.carousel.before.dragReset();
           this.navigate('next', 'drag');
-          e.preventDefault();
         } else if (dist > this.options.threshold) {
-          this.dragReset(this.carousel.after);
+          this.carousel.after.dragReset();
           this.navigate('prev', 'drag');
-          e.preventDefault();
         } else {
-          [this.carousel.current, this.carousel.before, this.carousel.after].forEach(function (el) {
-            _this4.transitionStart(el);
-
-            el.style.transform = null;
-          });
+          this.dragPosition(0, true);
         }
 
         document.removeEventListener('mouseup', this.carousel.fn.dragEnd);
         document.removeEventListener('mousemove', this.carousel.fn.dragMove);
       }
-    }, {
-      key: "dragReset",
-      value: function dragReset(el) {
-        el.addEventListener('transitionend', this.carousel.fn.transitionEnd);
-        el.style.transform = null;
-      }
-    }, {
-      key: "transitionEnd",
-      value: function transitionEnd(e) {
-        var el = e.target;
-        this.transitionClear(el);
-      }
-    }, {
-      key: "transitionStart",
-      value: function transitionStart(el) {
-        el.addEventListener('transitionend', this.carousel.fn.transitionEnd);
-        el.classList.add('transitioning');
-        return el;
-      }
-    }, {
-      key: "transitionClear",
-      value: function transitionClear(el) {
-        if (!el) {
-          return false;
-        }
-
-        if (el.baseTransitionClass !== undefined) {
-          el.classList.remove(el.baseTransitionClass);
-          delete el.baseTransitionClass;
-        }
-
-        if (el.moveTransitionClass !== undefined) {
-          el.classList.remove(el.moveTransitionClass);
-          delete el.moveTransitionClass;
-        }
-
-        el.style.transform = null;
-        el.classList.remove('transitioning');
-        el.removeEventListener('transitionend', this.carousel.fn.transitionEnd);
-      }
     }]);
 
-    return Core;
+    return Coaster;
   }();
 
   var Carousel = /*#__PURE__*/function (_Core) {
@@ -540,7 +615,7 @@
     }
 
     return Carousel;
-  }(Core);
+  }(Coaster);
 
   return Carousel;
 
