@@ -74,7 +74,6 @@ export default class Slide {
         if (type == 'in') {
             this.addTransition(transitionMove)
         }
-        console.warn(type, transition, direction)
 
         requestAnimationFrame(() => {
             this.addTransition('transitioning')

@@ -21,6 +21,7 @@ export default class Coaster {
             'autoplay': null,
             'delay': null,
             'queue': null,
+            'dragevent': null,
             'fn': {
                 'navigate': null,
                 'dragStart': null,
@@ -95,8 +96,8 @@ export default class Coaster {
 
     setSlides() {
         this.DOM.track = this.DOM.carousel.querySelector(this.options.selector.track)
-        ;[...this.DOM.carousel.querySelectorAll(this.options.selector.slide)].forEach(slide => this.carousel.slides.push(new Slide(slide)))
-        if (! this.carousel.slides.length) {
+            ;[...this.DOM.carousel.querySelectorAll(this.options.selector.slide)].forEach(slide => this.carousel.slides.push(new Slide(slide)))
+        if (!this.carousel.slides.length) {
             return false
         }
     }
@@ -217,8 +218,9 @@ export default class Coaster {
         this.pause()
     }
 
-    dragStart (e) {
-        e = e || window.event;
+    dragStart(e) {
+        this.carousel.dragevent = e || window.event;
+        this.carousel.dragevent.preventDefault()
 
         this.pause()
 
@@ -228,10 +230,10 @@ export default class Coaster {
 
         this.carousel.currentInitialX = this.carousel.current.slide.offsetLeft;
 
-        if (e.type == 'touchstart') {
-            this.carousel.dragInitialX = this.carousel.newX = e.touches[0].clientX;
+        if (this.carousel.dragevent.type == 'touchstart') {
+            this.carousel.dragInitialX = this.carousel.newX = this.carousel.dragevent.touches[0].clientX;
         } else {
-            this.carousel.dragInitialX = this.carousel.newX = e.clientX;
+            this.carousel.dragInitialX = this.carousel.newX = this.carousel.dragevent.clientX;
             document.addEventListener('mouseup', this.carousel.fn.dragEnd)
             document.addEventListener('mousemove', this.carousel.fn.dragMove)
         }
@@ -246,7 +248,7 @@ export default class Coaster {
         this.dragPosition(0)
     }
 
-    dragMove (e) {
+    dragMove(e) {
         e = e || window.event
         e.preventDefault()
         e.stopPropagation()
@@ -275,7 +277,7 @@ export default class Coaster {
         }
     }
 
-    dragEnd (e) {
+    dragEnd(e) {
         ;[this.carousel.current, this.carousel.before, this.carousel.after].forEach(el => {
             el.dragStop()
         })

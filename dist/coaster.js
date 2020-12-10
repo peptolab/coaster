@@ -1,5 +1,5 @@
 /*!
- * Coaster.js v1.0.2
+ * Coaster.js v1.0.3
  * (c) 2020-2020 Simon Mundy <simon.mundy@peptolab.com> (https://www.peptolab.com)
  * Released under the MIT License.
  */
@@ -238,7 +238,6 @@
           this.addTransition(transitionMove);
         }
 
-        console.warn(type, transition, direction);
         requestAnimationFrame(function () {
           _this.addTransition('transitioning');
 
@@ -335,6 +334,7 @@
         'autoplay': null,
         'delay': null,
         'queue': null,
+        'dragevent': null,
         'fn': {
           'navigate': null,
           'dragStart': null,
@@ -548,7 +548,8 @@
     }, {
       key: "dragStart",
       value: function dragStart(e) {
-        e = e || window.event;
+        this.carousel.dragevent = e || window.event;
+        this.carousel.dragevent.preventDefault();
         this.pause();
 
         if (this.carousel.current.isMoving()) {
@@ -557,10 +558,10 @@
 
         this.carousel.currentInitialX = this.carousel.current.slide.offsetLeft;
 
-        if (e.type == 'touchstart') {
-          this.carousel.dragInitialX = this.carousel.newX = e.touches[0].clientX;
+        if (this.carousel.dragevent.type == 'touchstart') {
+          this.carousel.dragInitialX = this.carousel.newX = this.carousel.dragevent.touches[0].clientX;
         } else {
-          this.carousel.dragInitialX = this.carousel.newX = e.clientX;
+          this.carousel.dragInitialX = this.carousel.newX = this.carousel.dragevent.clientX;
           document.addEventListener('mouseup', this.carousel.fn.dragEnd);
           document.addEventListener('mousemove', this.carousel.fn.dragMove);
         }
