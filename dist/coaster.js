@@ -347,40 +347,34 @@
             this.carousel.before.baseTransitionClass = "carousel__transition--".concat(moveType);
             this.carousel.before.moveTransitionClass = "carousel__transition--".concat(moveType, "-").concat(this.carousel.direction);
             window.requestAnimationFrame(function (e) {
-              _this2.carousel.before.addEventListener('transitionend', _this2.carousel.fn.transitionEnd);
-
               _this2.carousel.before.classList.add(_this2.carousel.before.baseTransitionClass);
 
               _this2.carousel.before.classList.add(_this2.carousel.before.moveTransitionClass);
 
-              _this2.carousel.before.classList.add('transitioning');
+              _this2.transitionStart(_this2.carousel.before);
             });
             this.carousel.current.baseTransitionClass = "carousel__transition--".concat(moveType);
             this.carousel.current.moveTransitionClass = "carousel__transition--".concat(moveType, "-").concat(this.carousel.opposite);
             this.carousel.current.classList.add(this.carousel.current.moveTransitionClass);
             window.requestAnimationFrame(function (e) {
-              _this2.carousel.current.addEventListener('transitionend', _this2.carousel.fn.transitionEnd);
-
               _this2.carousel.current.classList.remove(_this2.carousel.current.moveTransitionClass);
 
               _this2.carousel.current.classList.add(_this2.carousel.current.baseTransitionClass);
 
-              _this2.carousel.current.classList.add('transitioning');
+              _this2.transitionStart(_this2.carousel.current);
             });
             break;
 
           case 'drag':
             this.carousel.before.baseTransitionClass = "carousel__transition--".concat(moveType);
             this.carousel.before.moveTransitionClass = "carousel__transition--".concat(moveType, "-").concat(this.carousel.direction);
-            this.carousel.before.addEventListener('transitionend', this.carousel.fn.transitionEnd);
             this.carousel.before.classList.add(this.carousel.before.baseTransitionClass);
             this.carousel.before.classList.add(this.carousel.before.moveTransitionClass);
-            this.carousel.before.classList.add('transitioning');
+            this.transitionStart(this.carousel.before);
             this.carousel.current.baseTransitionClass = "carousel__transition--".concat(moveType);
             this.carousel.current.classList.add(this.carousel.current.baseTransitionClass);
-            this.carousel.current.addEventListener('transitionend', this.carousel.fn.transitionEnd);
             this.carousel.current.style.transform = "translateX(0)";
-            this.carousel.current.classList.add('transitioning');
+            this.transitionStart(this.carousel.current);
             break;
         }
 
@@ -480,7 +474,9 @@
           e.preventDefault();
         } else {
           [this.carousel.current, this.carousel.before, this.carousel.after].forEach(function (el) {
-            return _this4.dragReset(el);
+            _this4.transitionStart(el);
+
+            el.style.transform = null;
           });
         }
 
@@ -498,6 +494,13 @@
       value: function transitionEnd(e) {
         var el = e.target;
         this.transitionClear(el);
+      }
+    }, {
+      key: "transitionStart",
+      value: function transitionStart(el) {
+        el.addEventListener('transitionend', this.carousel.fn.transitionEnd);
+        el.classList.add('transitioning');
+        return el;
       }
     }, {
       key: "transitionClear",
