@@ -152,7 +152,7 @@ export default class Coaster {
         let directionOut, directionIn;
 
         if (this.carousel.current.isMoving()) {
-            const renavigate = this.debounce(function () {
+            const renavigate = debounce(function () {
                 this.navigate(targetIndex, moveType)
             }.bind(this), 50);
             return renavigate()

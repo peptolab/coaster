@@ -1,5 +1,5 @@
 /*!
- * Coaster.js v1.0.1
+ * Coaster.js v1.0.2
  * (c) 2020-2020 Simon Mundy <simon.mundy@peptolab.com> (https://www.peptolab.com)
  * Released under the MIT License.
  */
@@ -290,6 +290,31 @@
     return Slide;
   }();
 
+  /**
+   * Converts value entered as number
+   * or string to integer value.
+   *
+   * @param {String} value
+   * @returns {Number}
+   */
+  function debounce(func, wait, immediate) {
+    var timeout;
+    return function () {
+      var context = this,
+          args = arguments;
+
+      var later = function later() {
+        timeout = null;
+        if (!immediate) func.apply(context, args);
+      };
+
+      var callNow = immediate && !timeout;
+      clearTimeout(timeout);
+      timeout = setTimeout(later, wait);
+      if (callNow) func.apply(context, args);
+    };
+  }
+
   var Coaster = /*#__PURE__*/function () {
     function Coaster(el, options) {
       _classCallCheck(this, Coaster);
@@ -453,7 +478,7 @@
         var directionOut, directionIn;
 
         if (this.carousel.current.isMoving()) {
-          var renavigate = this.debounce(function () {
+          var renavigate = debounce(function () {
             this.navigate(targetIndex, moveType);
           }.bind(this), 50);
           return renavigate();
