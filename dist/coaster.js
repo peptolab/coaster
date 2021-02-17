@@ -1,6 +1,6 @@
 /*!
- * Coaster.js v1.0.3
- * (c) 2020-2020 Simon Mundy <simon.mundy@peptolab.com> (https://www.peptolab.com)
+ * Coaster.js v1.0.5
+ * (c) 2020-2021 Simon Mundy <simon.mundy@peptolab.com> (https://www.peptolab.com)
  * Released under the MIT License.
  */
 
@@ -444,8 +444,14 @@
           this.DOM.track.addEventListener('mousedown', this.carousel.fn.dragStart);
         }
 
-        this.DOM.navPrev.addEventListener('click', this.carousel.fn.navigate);
-        this.DOM.navNext.addEventListener('click', this.carousel.fn.navigate);
+        if (this.DOM.navPrev) {
+          this.DOM.navPrev.addEventListener('click', this.carousel.fn.navigate);
+        }
+
+        if (this.DOM.navNext) {
+          this.DOM.navNext.addEventListener('click', this.carousel.fn.navigate);
+        }
+
         this.DOM.navPaginator.forEach(function (el) {
           return el.addEventListener('click', _this2.carousel.fn.navigate);
         });

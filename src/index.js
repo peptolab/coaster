@@ -123,8 +123,13 @@ export default class Coaster {
             this.DOM.track.addEventListener('mousedown', this.carousel.fn.dragStart)
         }
 
-        this.DOM.navPrev.addEventListener('click', this.carousel.fn.navigate)
-        this.DOM.navNext.addEventListener('click', this.carousel.fn.navigate)
+        if (this.DOM.navPrev) {
+          this.DOM.navPrev.addEventListener('click', this.carousel.fn.navigate)
+        }
+
+        if (this.DOM.navNext) {
+          this.DOM.navNext.addEventListener('click', this.carousel.fn.navigate)
+        }
 
         this.DOM.navPaginator.forEach(el => el.addEventListener('click', this.carousel.fn.navigate))
     }
