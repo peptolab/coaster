@@ -22,6 +22,10 @@ export default class Coaster {
             'delay': null,
             'queue': null,
             'dragevent': null,
+            'drag': {
+                'dragging': false,
+                'initialX': 0
+            },
             'fn': {
                 'navigate': null,
                 'dragStart': null,
@@ -33,7 +37,7 @@ export default class Coaster {
         }
 
         this.options = {
-            'threshold': 200,
+            'threshold': .2, // Swipe needs to travel distance of screen
             'drag': {
                 'touch': true,
                 'mouse': false
@@ -124,11 +128,11 @@ export default class Coaster {
         }
 
         if (this.DOM.navPrev) {
-          this.DOM.navPrev.addEventListener('click', this.carousel.fn.navigate)
+            this.DOM.navPrev.addEventListener('click', this.carousel.fn.navigate)
         }
 
         if (this.DOM.navNext) {
-          this.DOM.navNext.addEventListener('click', this.carousel.fn.navigate)
+            this.DOM.navNext.addEventListener('click', this.carousel.fn.navigate)
         }
 
         this.DOM.navPaginator.forEach(el => el.addEventListener('click', this.carousel.fn.navigate))
@@ -147,21 +151,18 @@ export default class Coaster {
     }
 
     autoplay() {
-        this.navigate('next', this.options.transition.type.click)
+        this.navigate('next', this.options.transition.type.click, 0)
 
         if (this.options.autoplay.active) {
             this.play()
         }
     }
 
-    navigate(targetIndex, moveType) {
+    navigate(targetIndex, moveType, velocity) {
         let directionOut, directionIn;
 
         if (this.carousel.current.isMoving()) {
-            const renavigate = debounce(function () {
-                this.navigate(targetIndex, moveType)
-            }.bind(this), 50);
-            return renavigate()
+            return false
         }
 
         switch (targetIndex) {
@@ -207,8 +208,8 @@ export default class Coaster {
                 break;
 
             case 'drag':
-                this.carousel.before.drag('out', moveType, directionOut)
-                this.carousel.current.drag('in', moveType, directionIn)
+                this.carousel.before.drag('out', moveType, directionOut, velocity)
+                this.carousel.current.drag('in', moveType, directionIn, velocity)
                 break
         }
 
@@ -233,12 +234,13 @@ export default class Coaster {
             return false
         }
 
-        this.carousel.currentInitialX = this.carousel.current.slide.offsetLeft;
+        this.carousel.drag.dragging = true
+        this.carousel.drag.slideX = this.carousel.current.slide.offsetLeft;
 
         if (this.carousel.dragevent.type == 'touchstart') {
-            this.carousel.dragInitialX = this.carousel.newX = this.carousel.dragevent.touches[0].clientX;
+            this.carousel.drag.initialX = this.carousel.drag.currentX = this.carousel.drag.previousX = this.carousel.dragevent.touches[0].clientX;
         } else {
-            this.carousel.dragInitialX = this.carousel.newX = this.carousel.dragevent.clientX;
+            this.carousel.drag.initialX = this.carousel.drag.currentX = this.carousel.dragevent.clientX;
             document.addEventListener('mouseup', this.carousel.fn.dragEnd)
             document.addEventListener('mousemove', this.carousel.fn.dragMove)
         }
@@ -246,9 +248,9 @@ export default class Coaster {
         this.carousel.before = (this.carousel.index > 0) ? this.carousel.slides[this.carousel.index - 1] : this.carousel.slides[this.carousel.slides.length - 1]
         this.carousel.after = (this.carousel.index < this.carousel.slides.length - 1) ? this.carousel.slides[this.carousel.index + 1] : this.carousel.slides[0]
 
-        ;[this.carousel.current, this.carousel.before, this.carousel.after].forEach(el => {
-            el.dragStart()
-        })
+            ;[this.carousel.current, this.carousel.before, this.carousel.after].forEach(el => {
+                el.dragStart()
+            })
 
         this.dragPosition(0)
     }
@@ -258,14 +260,20 @@ export default class Coaster {
         e.preventDefault()
         e.stopPropagation()
 
-        this.carousel.newX = (e.type == 'touchmove') ? e.touches[0].clientX : e.clientX;
-        this.carousel.calculatedX = (this.carousel.currentInitialX - (this.carousel.dragInitialX - this.carousel.newX))
+        if (!this.carousel.drag.dragging) {
+            return false
+        }
 
-        this.dragPosition(this.carousel.calculatedX, false)
+        this.carousel.drag.previousX = this.carousel.drag.currentX;
+        this.carousel.drag.currentX = (e.type == 'touchmove') ? e.touches[0].clientX : e.clientX;
+        this.carousel.drag.velocityX = this.carousel.drag.currentX - this.carousel.drag.previousX;
+        this.carousel.drag.calculatedSlideX = (this.carousel.drag.slideX - (this.carousel.drag.initialX - this.carousel.drag.currentX))
+
+        this.dragPosition(this.carousel.drag.calculatedSlideX, false)
     }
 
     dragPosition(x, transition) {
-        let dist = this.carousel.currentInitialX - (this.carousel.dragInitialX - this.carousel.newX)
+        let dist = this.carousel.drag.slideX - (this.carousel.drag.initialX - this.carousel.drag.currentX)
 
         this.carousel.current.dragMove(x, transition)
 
@@ -283,18 +291,29 @@ export default class Coaster {
     }
 
     dragEnd(e) {
+        if (!this.carousel.drag.dragging) {
+            return false
+        }
+
         ;[this.carousel.current, this.carousel.before, this.carousel.after].forEach(el => {
             el.dragStop()
         })
 
-        let dist = this.carousel.currentInitialX - (this.carousel.dragInitialX - this.carousel.newX)
+        this.carousel.drag.dragging = false
 
-        if (dist < -this.options.threshold) {
+        let dist = this.carousel.drag.slideX - (this.carousel.drag.initialX - this.carousel.drag.currentX)
+        let velocity = Math.max(Math.abs(this.carousel.drag.velocityX), 0.01)
+        let minThreshold = Math.abs(this.DOM.carousel.offsetWidth * this.options.threshold)
+        let maxThreshold = (1 - (Math.abs(dist) / this.DOM.carousel.offsetWidth)) * 1;
+
+        let velocityFactor = 1 - (Math.min(velocity, 100) / 100)
+
+        if (dist < -minThreshold) {
             this.carousel.before.dragReset()
-            this.navigate('next', 'drag')
-        } else if (dist > this.options.threshold) {
+            this.navigate('next', 'drag', maxThreshold * velocityFactor)
+        } else if (dist > minThreshold) {
             this.carousel.after.dragReset()
-            this.navigate('prev', 'drag')
+            this.navigate('prev', 'drag', maxThreshold * velocityFactor)
         } else {
             this.dragPosition(0, true)
         }

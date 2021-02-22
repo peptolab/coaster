@@ -66,6 +66,10 @@ export default class Slide {
     }
 
     move(type, transition, direction) {
+        if (this.slide.classList.contains('transitioning')) {
+            return false
+        }
+
         this.moving = true
 
         const transitionBase = `carousel__transition--${transition}`
@@ -88,13 +92,24 @@ export default class Slide {
         })
     }
 
-    drag(type, transition, direction) {
+    drag(type, transition, direction, velocity) {
+        if (this.slide.classList.contains('transitioning')) {
+            return false
+        }
+
         this.moving = true
+
+        let velocityDuration = 0
+        if (velocity > 0) {
+            velocityDuration = (1 - (Math.min(99, velocity) / 100)) * 0.75
+        }
+        velocityDuration = velocity + 's'
 
         const transitionBase = `carousel__transition--${transition}`
         const transitionMove = `carousel__transition--${transition}-${direction}`
 
         this.slide.style.transform = null
+        this.slide.style.transitionDuration = velocityDuration
 
         this.addTransition('transitioning')
         this.addTransition(transitionBase)
@@ -112,6 +127,7 @@ export default class Slide {
         this.moving = false
 
         this.slide.removeEventListener('transitionend', this.moveEndFn, true)
+        this.slide.style.transitionDuration = null
         this.transition.forEach(cls => this.removeTransition(cls))
 
         this.dragReset()
