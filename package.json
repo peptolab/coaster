@@ -1,6 +1,6 @@
 {
   "name": "@peptolab/coaster",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "description": "Coaster is a dependency-free ES6 Javascript carousel. Designed to be lightly built with JS and HTML with CSS transitions and animations to provide maximum flexibility and customisation.",
   "main": "dist/coaster.js",
   "repository": {

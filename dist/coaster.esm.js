@@ -1,5 +1,5 @@
 /*!
- * Coaster.js v1.0.5
+ * Coaster.js v1.0.6
  * (c) 2020-2021 Simon Mundy <simon.mundy@peptolab.com> (https://www.peptolab.com)
  * Released under the MIT License.
  */
